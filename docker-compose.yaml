@@ -10,8 +10,9 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - PGDATA=postgres
+      - POSTGRES_DB=general
     ports:
-      - "5484:5432"
+      - "5432:5432"
     networks:
       - custom
 networks:

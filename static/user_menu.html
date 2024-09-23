@@ -122,6 +122,45 @@
             background-color: #0056b3;
             transform: scale(1.05);
         }
+        #AddUserListForm {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s, margin-bottom 0.3s;
+        }
+        #AddUserListForm.show {
+            display: block;
+            opacity: 1;
+        }
+        #AddUserListForm input {
+            margin: 5px 0;
+            padding: 8px;
+            width: calc(100% - 16px);
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        #AddUserListForm input:focus {
+            border-color: #007BFF;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+        }
+        #AddUserListForm button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        #AddUserListForm button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
         /* Стили для модального окна */
         #editUserForm {
             position: fixed;
@@ -252,7 +291,18 @@
             </div>
         </form>
     </div>
-    
+
+    <!-- Кнопка для добавления новых пользователей пользователей списком -->
+    <button class="add-btn" onclick="toggleAddUserListForm()">+ Add New User by list</button>
+
+    <div id="AddUserListForm">
+        <h3>Add New Users</h3>
+        <form id="userListForm" onsubmit="AddUserList()" name="userListForm">
+            <input type="file" id="input_file" />
+            <button type="submit" id="file_upload">Add list</button>
+        </form>
+    </div>
+
     <div class="table-container" id="tableContainer">
         <div class="row header">
             <div class="cell">#</div>
@@ -429,6 +479,7 @@
         }
 
         function deleteUser(url) {
+            console.log(url);
             if (confirm('Are you sure you want to delete this user?')) {
                 fetch(url, {
                     method: 'DELETE'
@@ -524,7 +575,6 @@
         if (confirm('Are you sure you want to delete this group?')) {
             // Заменяем параметры в URL
             const url = deleteGroupUrl.replace(/\/\d+\/\d+$/, `/${userId}/${groupId}`);
-
             fetch(url, {
                 method: 'DELETE'
             }).then(response => response.json())
@@ -535,8 +585,40 @@
         }
     }
 
-        function closeGroupListModal() {
+    function closeGroupListModal() {
             document.getElementById('groupListModal').classList.remove('show');
+        }
+
+
+    function toggleAddUserListForm() {
+            const form = document.getElementById('AddUserListForm');
+            const tableContainer = document.getElementById('tableContainer');
+            if (form.classList.contains('show')) {
+                form.classList.remove('show');
+                tableContainer.style.marginTop = '20px'; // Возвращаем отступ
+            } else {
+                form.classList.add('show');
+                tableContainer.style.marginTop = '180px'; // Увеличиваем отступ
+            }
+        }
+
+
+    function AddUserList() {
+            var file = document.getElementById('input_file').files[0];
+            var currentLocation = window.location;
+            url= currentLocation.origin + '/config/import_user_list'
+            const formData = new FormData();
+            formData.append("file", file, file.name);
+            const requestOptions = {
+                headers: {
+                    "Content-Type": "multipart/form-data"
+                },
+                method: "POST",
+                body: formData
+            };
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', url, true);
+            xhr.send(formData);
         }
     </script>
 

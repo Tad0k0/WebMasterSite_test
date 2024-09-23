@@ -3,10 +3,15 @@ import re
 from typing import Dict
 
 from alembic import command
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException, File, UploadFile
 from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import aiofiles
+import os
+
+from api.auth.schemas import UserCreate
+from api.auth.manager import UserManager, get_user_manager
 from api.auth.auth_config import current_user
 from api.auth.models import GroupUserAssociation, User
 from api.config.models import Config, GroupConfigAssociation, List, ListURI, Role, Group
@@ -329,6 +334,39 @@ async def delete_user(
         "status": 200,
         "message": f"delete user with id: {id}",
     }
+
+
+@router.post("/import_user_list")
+async def register_list_upload(
+        request: Request,
+        user_manager: UserManager = Depends(get_user_manager),
+        file: UploadFile = File(...),
+        user=Depends(current_user)
+):
+    try:
+        tmp_file = "tmp_" + file.filename
+        async with aiofiles.open(tmp_file, 'wb') as saved_file:
+            while contents := await file.read(1024 * 1024):
+                await saved_file.write(contents)
+    except Exception as err:
+        return {"message": f"The next error occurs during uploading the file: {err}"}
+    finally:
+        await file.close()
+
+    try:
+        async with aiofiles.open(tmp_file, 'r') as f:
+            while user_string := await f.readline():
+                user_params = user_string.split(",")
+                user_name = user_params[2] if 2 < len(user_params) else None
+                user = UserCreate(id=0, email=user_params[0], password=user_params[1], username=user_name)
+                await user_manager.create(user)
+
+    except Exception as err:
+        return {"message": f"The next error occurs during bd import: {err}"}
+    finally:
+        os.remove(tmp_file)
+
+    return {"status": 200, "message": f"Successfully uploaded {file.filename}"}
 
 
 @router.get("/user_group/{user_id}")
